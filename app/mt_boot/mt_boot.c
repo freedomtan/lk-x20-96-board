@@ -980,6 +980,9 @@ int boot_linux_fdt(void *kernel, unsigned *tags,
 	dprintf(CRITICAL,"lk boot reason = %s\n", g_boot_reason[boot_reason]);
 	dprintf(CRITICAL,"lk finished --> jump to linux kernel %s\n\n", g_is_64bit_kernel ? "64Bit" : "32Bit");
 
+	// disable WDT for kernel w/o WDT device tree entry
+        *(volatile unsigned int *)(TOPRGU_BASE) = 0x22000000;
+
 	if (g_is_64bit_kernel) {
 		lk_jump64((u32)entry, (u32)tags, 0, KERNEL_64BITS);
 	} else {
