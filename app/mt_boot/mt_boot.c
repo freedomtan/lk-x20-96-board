@@ -681,11 +681,12 @@ int boot_linux_fdt(void *kernel, unsigned *tags,
 	ret = fdt_setprop(fdt, offset, "reg", mem_reg_property,
 	                  ((int)get_mblock_num? get_mblock_num(): g_nr_bank ) * sizeof(dt_dram_info));
 	if (ret) return FALSE;
-
+#if 0
 	if (platform_atag_append) {
 		ret = platform_atag_append(fdt);
 		if (ret) return FALSE;
 	}
+#endif
 #ifdef MBLOCK_LIB_SUPPORT
 	ret = fdt_memory_append(fdt);
 	if (ret) return FALSE;
