@@ -272,6 +272,12 @@ again:
 
 		/*Pick up matched command and handle it*/
 		for (cmd = cmdlist; cmd; cmd = cmd->next) {
+
+			if (fastboot_mode == FB_IF_ACTIVE) {
+				fastboot_mode = FB_ALWAYS;
+				dprintf(ALWAYS, "fastboot is active on host; staying in fastboot mode\n");
+                        }
+
 			fastboot_state = STATE_COMMAND;
 			if (memcmp(buffer, cmd->prefix, cmd->prefix_len)) {
 				continue;

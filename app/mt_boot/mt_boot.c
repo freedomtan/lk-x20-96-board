@@ -42,6 +42,7 @@
 #include <arch/ops.h>
 #include <ctype.h>
 
+
 #include <target.h>
 #include <platform.h>
 
@@ -60,6 +61,7 @@
 #if defined(MTK_SECURITY_SW_SUPPORT) && defined(MTK_VERIFIED_BOOT_SUPPORT)
 #include "oemkey.h"
 #endif
+#include "fastboot.h"
 
 #ifdef MBLOCK_LIB_SUPPORT
 #include <mblock.h>
@@ -148,6 +150,24 @@ static struct udc_device surf_udc_device = {
 	.manufacturer   = USB_MANUFACTURER,
 	.product    = USB_PRODUCT_NAME,
 };
+
+int fastboot_mode;
+static time_t fastboot_timeout;
+
+static bool do_fastboot_check(void *data)
+{
+	time_t *val = (time_t *)data;
+
+	switch (fastboot_mode) {
+	case FB_NEVER:
+		return false;
+	case FB_ALWAYS:
+		return true;
+	default:
+		return current_time() < *val;
+        }
+}
+
 
 char *cmdline_get(void)
 {
@@ -1452,6 +1472,9 @@ void mt_boot_init(const struct app_descriptor *app)
 #endif
 	char serial_num[SERIALNO_LEN];
 
+	fastboot_mode = FB_IF_ACTIVE;
+        dprintf(CRITICAL,"mt_boot_init <fastboot_mode = FB_IF_ACTIVE> %s:line %d\n",__FILE__,__LINE__);
+
 
 #ifdef CONFIG_MTK_USB_UNIQUE_SERIAL
 	/* Please enable EFUSE clock in platform.c before reading sn key */
@@ -1485,8 +1508,12 @@ void mt_boot_init(const struct app_descriptor *app)
 	sn_buf[SN_BUF_LEN] = '\0';
 	surf_udc_device.serialno = sn_buf;
 
-	if (g_boot_mode == FASTBOOT)
-		goto fastboot;
+	if (g_boot_mode == FASTBOOT) {
+		fastboot_mode = FB_ALWAYS;
+	}
+
+	if (!fastboot_mode)
+		goto boot;
 
 #ifdef MTK_SECURITY_SW_SUPPORT
 	/* Do not block fastboot if check failed */
@@ -1496,10 +1523,6 @@ void mt_boot_init(const struct app_descriptor *app)
 	}
 #endif
 
-	/* Will not return */
-	boot_linux_from_storage();
-
-fastboot:
 	target_fastboot_init();
 	if (!usb_init)
 		/*Hong-Rong: wait for porting*/
@@ -1508,8 +1531,13 @@ fastboot:
 	mt_part_dump();
 	sz = target_get_max_flash_size();
 	fastboot_init(target_get_scratch_address(), sz);
-	udc_start();
 
+	fastboot_timeout = current_time() + 5000; /* wait fastboot for 5 sec */
+	udc_start_cond(do_fastboot_check, &fastboot_timeout);
+	udc_stop();
+boot:
+	/* Will not return */
+	boot_linux_from_storage();
 }
 
 

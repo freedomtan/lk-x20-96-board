@@ -32,6 +32,14 @@
 #ifndef __FASTBOOT_H
 #define __FASTBOOT_H
 
+enum FASTBOOT_MODE {
+	FB_NEVER,
+	FB_IF_ACTIVE,
+	FB_ALWAYS,
+};
+
+extern int fastboot_mode;
+
 struct fastboot_cmd {
 	struct fastboot_cmd *next;
 	const char *prefix;

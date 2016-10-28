@@ -2728,7 +2728,8 @@ static void udc_devcapa_desc_fill_u3(unsigned char *data) {
 }
 #endif
 
-int udc_start(void) {
+int udc_start_cond(bool (*cond_func)(void *), void *cond_data)
+{
 	struct udc_descriptor *desc;
 	unsigned char *data;
 	unsigned size;
@@ -2880,13 +2881,20 @@ int udc_start(void) {
 	/* usb_connect */
 	mt_usb_connect_internal();
 
+	while ((!cond_func || cond_func(cond_data))) {
 #ifndef USB_GINTR
-	while (1) {
 		service_interrupts();
-	}
+#else
+		thread_sleep(1);
 #endif
+	}
 
 	return 0;
+}
+
+int udc_start()
+{
+	udc_start_cont(NULL, NULL);
 }
 
 int udc_stop(void) {
