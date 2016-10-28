@@ -452,6 +452,7 @@ int fastboot_init(void *base, unsigned size)
 	timer_initialize(&wdt_timer);
 	timer_set_periodic(&wdt_timer, 5000, (timer_callback)mtk_wdt_restart, NULL);
 
+	fastboot_register("boot", cmd_boot, TRUE, TRUE);
 	fastboot_register("getvar:", cmd_getvar, TRUE, FALSE);
 	fastboot_publish("version", "0.5");
 	fastboot_publish("version-preloader", g_boot_arg->pl_version);
